@@ -1,0 +1,53 @@
+---
+import { sitePath } from '../utils/paths';
+import Base from '../layouts/Base.astro';
+import EntryCard from '../components/EntryCard.astro';
+import { entries, categories } from '../data/entries';
+---
+<Base title="条目索引">
+  <section class="shell page-heading"><p class="eyebrow">索引 / <span lang="eo">Indekso</span></p><h1>找到需要检查的那一步</h1><p>首批 12 条：2 条形式谬误，10 条非形式谬误。分类用于学习，<a href={sitePath('/method/#classification')}>不是唯一或穷尽的分类体系</a>。</p></section>
+  <section class="shell library-section" aria-label="搜索与浏览条目">
+    <div id="search-controls" hidden><form role="search" id="search-form"><label for="query">搜索条目、疑问或例子</label><div class="search-row"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg><input id="query" name="q" type="search" placeholder="试试“专家”“因果”或“只有”" autocomplete="off" /><button type="submit" class="button primary">搜索</button></div></form><fieldset class="filter-set"><legend>按检查方向筛选</legend><div class="filter-list"><button type="button" data-filter="all" aria-pressed="true">全部 12</button>{categories.map(category => <button type="button" data-filter={category.id} aria-pressed="false">{category.name}</button>)}</div></fieldset></div>
+    <noscript><div class="notice">搜索需要 JavaScript。下方完整条目仍可阅读，也可通过分类浏览或使用浏览器的页面查找。</div></noscript>
+    <div class="browse-links">分类浏览：{categories.map(category => <a href={sitePath(`/categories/${category.id}/`)}>{category.name} ↗</a>)}</div>
+    <h2 class="list-heading">教学条目</h2>
+    <p id="result-count" class="result-count" role="status" aria-live="polite" aria-atomic="true">共 12 条教学条目</p>
+    <div id="entry-results" class="entry-grid">{entries.map((entry, index) => <div data-entry data-category={entry.category} data-search={[entry.title, entry.alias, entry.question, entry.summary, entry.definition, entry.example].join(' ')}><EntryCard entry={entry} index={index} /></div>)}</div>
+    <div id="empty-state" class="empty-state" hidden><span aria-hidden="true">○</span><h2>暂时没有匹配的条目</h2><p>试着缩短关键词，或切换为“全部”。这份首批手册仍在扩充。</p><button type="button" id="clear-search" class="button outline">清除搜索与筛选</button></div>
+  </section>
+</Base>
+<script>
+  const controls = document.querySelector<HTMLElement>('#search-controls')!;
+  const form = document.querySelector<HTMLFormElement>('#search-form')!;
+  const query = document.querySelector<HTMLInputElement>('#query')!;
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-entry]')];
+  const filters = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+  const count = document.querySelector<HTMLElement>('#result-count')!;
+  const empty = document.querySelector<HTMLElement>('#empty-state')!;
+  let selected = 'all';
+  const params = new URLSearchParams(location.search);
+  query.value = params.get('q') ?? '';
+  if (filters.some(button => button.dataset.filter === params.get('category'))) selected = params.get('category')!;
+  function update() {
+    const terms = query.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    let visible = 0;
+    cards.forEach(card => {
+      const match = (selected === 'all' || selected === card.dataset.category) && terms.every(term => card.dataset.search!.toLocaleLowerCase().includes(term));
+      card.hidden = !match;
+      if (match) visible++;
+    });
+    filters.forEach(button => button.setAttribute('aria-pressed', String(selected === button.dataset.filter)));
+    count.textContent = `显示 ${visible} / ${cards.length} 条教学条目`;
+    empty.hidden = visible !== 0;
+    const next = new URLSearchParams();
+    if (query.value.trim()) next.set('q', query.value.trim());
+    if (selected !== 'all') next.set('category', selected);
+    history.replaceState(null, '', `${location.pathname}${next.size ? '?' + next.toString() : ''}`);
+  }
+  filters.forEach(button => button.addEventListener('click', () => { selected = button.dataset.filter!; update(); }));
+  query.addEventListener('input', update);
+  form.addEventListener('submit', event => { event.preventDefault(); update(); });
+  document.querySelector('#clear-search')!.addEventListener('click', () => { query.value = ''; selected = 'all'; update(); query.focus(); });
+  controls.hidden = false;
+  update();
+</script>

@@ -1,0 +1,34 @@
+---
+import { sitePath } from '../utils/paths';
+import '../styles/global.css';
+interface Props { title: string; description?: string; }
+const { title, description = '从论证结构到证据边界，学习怎样检查理由。Lumturo 中文逻辑谬误学习手册。' } = Astro.props;
+const path = Astro.url.pathname;
+const nav = [{ href: sitePath('library/'), label: '条目索引' }, { href: sitePath('learn/'), label: '学习路径' }, { href: sitePath('method/'), label: '方法与来源' }];
+import Pwa from '../components/Pwa.astro';
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#a63d3d" />
+    <title>{title === '首页' ? 'Lumturo 灯塔 · 让理由经得起检查' : `${title} · Lumturo 灯塔`}</title>
+    <link rel="icon" href={sitePath('/favicon.svg')} type="image/svg+xml" />
+    <link rel="manifest" href={sitePath('manifest.webmanifest')} />
+    <link rel="apple-touch-icon" href={sitePath('icons/icon-192.png')} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳至正文</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href={sitePath('/')} aria-label="Lumturo 灯塔 / 逻辑科普 — 首页"><svg aria-hidden="true" viewBox="0 0 32 40"><path d="M12 15h8l4 22H8l4-22ZM10 10h12v5H10zM16 1l7 7H9l7-7Z" fill="currentColor"/><path d="M2 11h5m18 0h5M5 3l4 3m18-3-4 3" stroke="currentColor" stroke-width="2"/></svg><span>Lumturo<span class="brand-cn">灯塔 / 逻辑科普</span></span></a>
+        <nav aria-label="主导航">{nav.map(({ href, label }) => <a href={href} aria-current={path.startsWith(href) ? 'page' : undefined}>{label}</a>)}</nav>
+      </div>
+    </header>
+    <main id="main" tabindex="-1"><slot /></main>
+    <Pwa />
+    <footer class="site-footer"><div><a class="footer-brand" href={sitePath('/')}>Lumturo <span lang="eo">· Lerni, ekzameni.</span></a><p>先还原论证，再检查理由，最后保留恰当的不确定性。</p></div><div><p>首批 12 条 · 中文教学试行版 0.1</p><a href={sitePath('/method/#sources')}>阅读来源与编辑说明 ↗</a><p class="small">世界语用于名称及短标签；当前未提供世界语全文。</p></div></footer>
+  </body>
+</html>

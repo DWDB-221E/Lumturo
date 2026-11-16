@@ -1,0 +1,5 @@
+---
+import Base from '../layouts/Base.astro';
+import { sitePath } from '../utils/paths';
+---
+<Base title="当前离线"><section class="shell not-found"><p class="eyebrow">离线阅读 / Lumturo</p><h1>这条路径尚未保存</h1><p>本版的 12 条教学内容已在首次联网时保存。可以返回索引继续阅读；外部参考资料和新版内容需要联网。</p><a class="button primary" href={sitePath('library/')}>打开离线条目索引 →</a></section></Base>

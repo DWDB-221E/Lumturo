@@ -1,0 +1,26 @@
+---
+import { sitePath } from '../../utils/paths';
+import Base from '../../layouts/Base.astro';
+import { entries, getCategory, entryUrl, sources, learningPaths } from '../../data/entries';
+export function getStaticPaths() { return entries.map(entry => ({ params: { slug: entry.slug }, props: { entry } })); }
+const { entry } = Astro.props;
+const category = getCategory(entry.category);
+const index = entries.indexOf(entry);
+const path = learningPaths.find(path => path.slugs.includes(entry.slug))!;
+const pathIndex = path.slugs.indexOf(entry.slug);
+const next = entries.find(e => e.slug === path.slugs[pathIndex + 1]);
+const sections = [{ id: 'definition', label: '定义与结构' }, { id: 'conditions', label: '何时构成' }, { id: 'example', label: '例子与诊断' }, { id: 'boundary', label: '看似相近，但不是' }, { id: 'avoid', label: '怎样避免' }, { id: 'references', label: '参考来源' }];
+---
+<Base title={entry.title} description={entry.summary}>
+  <div class="shell article-heading"><a class="back-link" href={sitePath(`/categories/${category.id}/`)}>← {category.name}</a><p class="eyebrow">条目 {String(index + 1).padStart(2, '0')} / {category.kind}</p><h1>{entry.title}</h1><p class="article-alias">{entry.alias}</p><p class="article-question">{entry.question}</p><div class="article-meta">教学试行版 0.1 · 原创示例为虚构场景 · 无专业人工审校声明</div></div>
+  <div class="shell article-layout"><aside class="article-toc"><nav aria-label="本条目录"><p class="eyebrow">本条阅读</p><ol>{sections.map(section => <li><a href={`#${section.id}`}>{section.label}</a></li>)}</ol></nav><div class="toc-note">这是一份检查工具。<br />请指出具体缺口，<br />不要仅贴谬误标签。</div></aside><article class="article-body">
+    <section id="definition"><h2><span>01</span> 定义与结构</h2><p>{entry.definition}</p><div class="structure"><p class="eyebrow">论证骨架</p><ol>{entry.structure.map(step => <li>{step}</li>)}</ol></div><p>{entry.explanation}</p></section>
+    <section id="conditions"><h2><span>02</span> 何时构成</h2><p>使用这个名称前，至少说明以下检查点如何适用于原话：</p><ul>{entry.conditions.map(condition => <li>{condition}</li>)}</ul></section>
+    <section id="example"><h2><span>03</span> 例子与诊断</h2><div class="example-box"><p class="eyebrow">原创示例 · 虚构</p><p>{entry.example}</p></div><h3>问题在哪一步？</h3><p>{entry.diagnosis}</p></section>
+    <section id="boundary"><h2><span>04</span> 看似相近，但不是</h2><div class="counterexample-box"><p class="eyebrow">边界反例</p><p>{entry.counterexample}</p></div><h3>为什么不按同一方式判错？</h3><p>{entry.boundary}</p></section>
+    <section id="avoid"><h2><span>05</span> 怎样避免</h2><ol class="avoid-list">{entry.avoid.map(item => <li>{item}</li>)}</ol><div class="notice compact">发现推理缺口，只能说明这份论证的支持不足；结论本身可能另有证据。事实真假与价值取舍也需要分别讨论。</div></section>
+    <section id="references"><h2><span>06</span> 参考来源</h2><p>本条为中文教学改写，定义与边界参照以下公开资料；论证骨架及示例由本手册编写，不是来源引文。</p><ul class="source-list"><li><a href={`${sources.iep.url}#${entry.sourceAnchor}`}>{sources.iep.title} ↗</a><span>具体核对条目：{entry.sourceSection}。</span></li><li><a href={`${sources.sep.url}#CorFal`}>{sources.sep.title} ↗</a><span>导论、§1 核心谬误与 §3.3 非形式逻辑方法；用于核对分类与论证评价边界。</span></li></ul><p class="small">资料访问：2026-11-17（中国标准时间）。<a href={sitePath('/method/#sources')}>查看完整来源与内容限制 →</a></p></section>
+    <section class="related-section"><h2>对照着读</h2><div class="related-links">{entry.related.map(slug => { const related = entries.find(e => e.slug === slug)!; return <a href={entryUrl(related)}><strong>{related.title}</strong><span>{related.summary}</span><b aria-hidden="true">→</b></a>; })}</div></section>
+    <div class="next-lesson"><p class="eyebrow">学习路径 · {path.title} · 第 {pathIndex + 1} / {path.slugs.length} 条</p>{next ? <a href={entryUrl(next)}>下一条：{next.title} <span aria-hidden="true">→</span></a> : <a href={sitePath('/learn/')}>本组读完了，回到学习路径 <span aria-hidden="true">→</span></a>}</div>
+  </article></div>
+</Base>

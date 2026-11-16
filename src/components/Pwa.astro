@@ -1,0 +1,55 @@
+<aside id="pwa-status" class="pwa-status" aria-label="离线阅读与安装">
+  <p id="pwa-message" role="status" aria-live="polite">可从浏览器菜单将灯塔添加到主屏幕。首次联网打开后，可离线阅读本版内容。</p>
+  <button id="pwa-install" class="button outline" type="button" hidden>安装灯塔</button>
+  <button id="pwa-update" class="button outline" type="button" hidden>更新并重新加载</button>
+</aside>
+<script>
+  const status = document.querySelector<HTMLElement>('#pwa-message')!;
+  const updateButton = document.querySelector<HTMLButtonElement>('#pwa-update')!;
+  const installButton = document.querySelector<HTMLButtonElement>('#pwa-install')!;
+  interface InstallEvent extends Event { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }>; }
+  let installEvent: InstallEvent | undefined;
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault(); installEvent = event as InstallEvent; installButton.hidden = false;
+  });
+  installButton.addEventListener('click', async () => {
+    if (!installEvent) return;
+    await installEvent.prompt(); await installEvent.userChoice;
+    installEvent = undefined; installButton.hidden = true;
+  });
+  window.addEventListener('appinstalled', () => { installButton.hidden = true; status.textContent = '灯塔已添加到应用。'; });
+  const reportConnectivity = () => {
+    if (!navigator.onLine) status.textContent = '当前离线：可阅读已保存的本版内容。外部参考资料需要联网。';
+    else status.textContent = '可从浏览器菜单安装灯塔；本版内容准备完成后可离线阅读。';
+  };
+  window.addEventListener('offline', reportConnectivity);
+  window.addEventListener('online', reportConnectivity);
+  reportConnectivity();
+  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    let requestedUpdate = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (requestedUpdate) location.reload(); });
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL, updateViaCache: 'none' }).then(registration => {
+      const offerUpdate = () => {
+        if (!registration.waiting) return;
+        status.textContent = '灯塔有新版本。更新会重新加载当前页面。'; updateButton.hidden = false;
+      };
+      offerUpdate();
+      registration.addEventListener('updatefound', () => {
+        registration.installing?.addEventListener('statechange', () => {
+          if (registration.waiting && navigator.serviceWorker.controller) offerUpdate();
+        });
+      });
+      updateButton.addEventListener('click', () => {
+        if (registration.waiting) { requestedUpdate = true; registration.waiting.postMessage({ type: 'LUMTURO_ACTIVATE' }); }
+      });
+      navigator.serviceWorker.ready.then(() => {
+        if (!registration.waiting) status.textContent = navigator.onLine ? '本版内容已准备好离线阅读。可从浏览器菜单安装灯塔。' : '当前离线：正在阅读已保存的本版内容。';
+      });
+    }).catch(() => { status.textContent = '离线阅读暂未准备好；联网时仍可正常浏览。'; });
+  }
+</script>
+<style>
+  .pwa-status { max-width: 1280px; margin: 2rem auto; padding: 0 1.5rem; font-size: .85rem; color: var(--muted, #625b55); }
+  .pwa-status p { margin-bottom: .75rem; }
+  .pwa-status [hidden] { display: none; }
+</style>

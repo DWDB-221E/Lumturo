@@ -1,0 +1,13 @@
+---
+import { sitePath } from '../../utils/paths';
+import Base from '../../layouts/Base.astro';
+import EntryCard from '../../components/EntryCard.astro';
+import { categories, entries } from '../../data/entries';
+export function getStaticPaths() { return categories.map(category => ({ params: { category: category.id }, props: { category } })); }
+const { category } = Astro.props;
+const selected = entries.filter(entry => entry.category === category.id);
+---
+<Base title={category.name}>
+  <section class="shell page-heading"><a class="back-link" href={sitePath('/library/')}>← 返回条目索引</a><p class="eyebrow">{category.kind} / {selected.length} 条教学条目</p><h1>{category.name}</h1><p>{category.description}</p></section>
+  <section class="shell library-section"><div class="notice">{category.id === 'form' ? '形式检查聚焦结构：如果能构造前提全真、结论为假的可能情况，这个形式便不能保证结论。' : '非形式检查需要语境：单看句式不能判错，还要检查内容、证据与讨论目的。'}</div><h2 class="list-heading">本类条目</h2><div class="entry-grid">{selected.map(entry => <EntryCard entry={entry} index={entries.indexOf(entry)} />)}</div><div class="browse-links">继续浏览：{categories.filter(c => c.id !== category.id).map(c => <a href={sitePath(`/categories/${c.id}/`)}>{c.name} →</a>)}</div></section>
+</Base>

@@ -1,0 +1,9 @@
+---
+import { sitePath } from '../utils/paths';
+import Base from '../layouts/Base.astro';
+import { entries, learningPaths, entryUrl } from '../data/entries';
+---
+<Base title="学习路径">
+  <section class="shell page-heading"><p class="eyebrow">学习路径 / <span lang="eo">Lerni</span></p><h1>从检查一句话开始</h1><p>按三个阶段读完首批 12 条。每条先看例子，再找缺口，最后用反例检查自己的判断。</p></section>
+  <section class="shell learn-layout"><div class="notice">不用记住所有名称。读完一条后，试着不使用谬误名称，用两句话说明“哪里缺少支持”和“需要补什么证据”。</div>{learningPaths.map((path, index) => <section class="learning-path"><div class="path-intro"><span class="path-number">0{index + 1}</span><h2>{path.title}</h2><p>{path.description}</p><span class="small">4 条 · 自定节奏</span></div><ol>{path.slugs.map(slug => { const entry = entries.find(e => e.slug === slug)!; return <li><a href={entryUrl(entry)}><div><h3>{entry.title}</h3><p>{entry.question}</p></div><span aria-hidden="true">→</span></a></li>; })}</ol></section>)}<section class="practice"><p class="eyebrow">读完之后 / 一次小练习</p><h2>“楼梯关闭了，所以它肯定已经断裂。”</h2><p>你能指出这里缺少什么，而不急着断言“楼梯没有断裂”吗？</p><details><summary>展开参考思路</summary><p>关闭可能源于维修、检测或其他原因。若只知道“断裂会关闭”，关闭不能必然推出断裂；但也不能由此证明没有断裂。先问关闭原因，查看检测记录。绕行可以是谨慎行动，不必等到事实完全确定。</p></details><a class="text-link" href={sitePath('/method/')}>用完整清单检查自己的答案 →</a></section></section>
+</Base>

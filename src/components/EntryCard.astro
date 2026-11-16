@@ -1,0 +1,12 @@
+---
+import { type Entry, getCategory, entryUrl } from '../data/entries';
+interface Props { entry: Entry; index?: number; }
+const { entry, index } = Astro.props;
+const category = getCategory(entry.category);
+---
+<article class:list={['entry-card', category.color]}>
+  <div class="card-meta"><span>{category.kind} · {category.name}</span>{index !== undefined && <span class="mono">{String(index + 1).padStart(2, '0')}</span>}</div>
+  <h3><a href={entryUrl(entry)}>{entry.title}<span aria-hidden="true">↗</span></a></h3>
+  <p>{entry.summary}</p>
+  <span class="card-question">{entry.question}</span>
+</article>

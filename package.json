@@ -1,0 +1,24 @@
+{
+  "name": "lumturo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1 --port 4311",
+    "build": "astro check && astro build",
+    "preview": "astro preview --host 127.0.0.1 --port 4311",
+    "test": "node tests/run.mjs",
+    "test:site": "node tests/site.mjs",
+    "icons": "node scripts/icons.mjs",
+    "test:references": "node tests/references.mjs"
+  },
+  "dependencies": {
+    "astro": "^5.16.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.5",
+    "@axe-core/playwright": "^4.10.2",
+    "playwright": "^1.56.1",
+    "typescript": "^5.9.3"
+  }
+}

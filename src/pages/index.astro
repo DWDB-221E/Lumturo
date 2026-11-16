@@ -1,0 +1,16 @@
+---
+import { sitePath } from '../utils/paths';
+import Base from '../layouts/Base.astro';
+import EntryCard from '../components/EntryCard.astro';
+import { entries, categories } from '../data/entries';
+---
+<Base title="首页">
+  <section class="hero shell">
+    <div class="hero-copy"><p class="eyebrow"><span lang="eo">LUMTURO</span> / 把思考的过程照亮</p><h1>结论之前，<br />先看看<span>理由。</span></h1><p class="hero-description">一份关于逻辑谬误的中文学习手册。<br class="desktop-break" />从一句话开始，辨认前提、检查推理，也辨认判断的边界。</p><div class="actions"><a class="button primary" href={sitePath('/learn/')}>从这里开始学习 <span aria-hidden="true">↗</span></a><a class="text-link" href={sitePath('/library/')}>浏览全部 12 条 <span aria-hidden="true">→</span></a></div><p class="hero-note">首批教学条目 · 不代表全部谬误 · 无需按名称给人贴标签</p></div>
+    <div class="argument-sheet"><div class="sheet-top"><span>论证观察室</span><span class="mono">001 / 条件推理</span></div><p class="sheet-question">灯亮了，<br />就一定有人预约吗？</p><ol class="argument-steps"><li><span>前提一</span><p>如果有人预约，门口的灯就会亮。</p></li><li><span>前提二</span><p>现在，灯亮了。</p></li><li class="conclusion"><span>结论？</span><p>所以，一定有人预约。<b aria-hidden="true">?</b></p></li></ol><div class="sheet-bottom"><span class="signal-dot"></span><p>还可能有其他解释。<br /><a href={sitePath('/entries/affirming-consequent/')}>检查这一步推理 →</a></p></div></div>
+  </section>
+  <div class="principle-band"><div class="shell"><span class="eyebrow">本手册的出发点</span><p>谬误名称是检查的起点。<strong>指出哪一步、为什么不成立，才是论证。</strong></p></div></div>
+  <section class="shell section-space"><div class="section-heading"><div><p class="eyebrow">01 / 找到检查的入口</p><h2>从四个方向，拆开一句话</h2></div><a class="text-link" href={sitePath('/library/')}>查看条目索引 →</a></div><div class="category-grid">{categories.map((category, i) => <a class:list={['category-card', category.color]} href={sitePath(`/categories/${category.id}/`)}><span class="mono">0{i + 1} <span aria-hidden="true">↗</span></span><h3>{category.name}</h3><p>{category.description}</p><span class="category-foot">{category.kind} · {entries.filter(e => e.category === category.id).length} 条</span></a>)}</div></section>
+  <section class="shell section-space featured"><div class="section-heading"><div><p class="eyebrow">02 / 日常讨论中的三个入口</p><h2>熟悉的说法，值得再看一眼</h2></div></div><div class="entry-grid">{['authority', 'false-cause', 'straw-man'].map(slug => <EntryCard entry={entries.find(e => e.slug === slug)!} />)}</div></section>
+  <section class="shell start-panel"><div><p class="eyebrow">03 / 学会之后，怎样使用？</p><h2>把判断写成一张可检查的清单</h2><p>这句话要证明什么？理由与结论怎样连接？有没有遗漏的前提？<br />把事实、推理和价值选择分别写清，再决定自己相信多少。</p></div><a class="button outline" href={sitePath('/method/')}>阅读检查方法 <span aria-hidden="true">→</span></a></section>
+</Base>

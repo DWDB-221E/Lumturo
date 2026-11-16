@@ -1,0 +1,104 @@
+import { chromium } from 'playwright';
+import AxeBuilder from '@axe-core/playwright';
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+
+import config from '../astro.config.mjs';
+const base = (process.env.LUMTURO_URL || `http://127.0.0.1:4311${config.base}`).replace(/\/$/, '');
+const mount = new URL(base).pathname.replace(/\/$/, '') + '/';
+const url = route => `${base}/${route.replace(/^\/+/, '')}`;
+await mkdir('review', { recursive: true });
+const results = [];
+const browser = await chromium.launch({ headless: true });
+const desktopContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+const page = await desktopContext.newPage();
+const errors = [];
+page.on('pageerror', error => errors.push(error.message));
+page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+await page.goto(base);
+await page.screenshot({ path: 'review/home-desktop.png', fullPage: true });
+await page.keyboard.press('Tab');
+await assert.equal(await page.locator('.skip-link').evaluate(el => el === document.activeElement), true);
+await page.keyboard.press('Enter');
+assert.equal(await page.locator('#main').evaluate(el => el === document.activeElement), true);
+results.push('Desktop keyboard: first Tab reaches visible skip link; Enter focuses main content.');
+const homeAxe = await new AxeBuilder({ page }).analyze();
+assert.deepEqual(homeAxe.violations.map(v => ({ id: v.id, impact: v.impact, count: v.nodes.length })), []);
+results.push('Desktop home: axe accessibility audit has 0 violations.');
+
+await page.goto(url('library/'));
+assert.equal(await page.locator('[data-entry]:visible').count(), 12);
+await page.locator('#query').fill('专家');
+assert.ok(await page.locator('[data-entry]:visible').count() > 0);
+await page.getByRole('button', { name: '条件与形式', exact: true }).click();
+assert.equal(await page.locator('[data-entry]:visible').count(), 0);
+assert.equal(await page.locator('#empty-state').isVisible(), true);
+await page.getByRole('button', { name: '清除搜索与筛选' }).click();
+assert.equal(await page.locator('[data-entry]:visible').count(), 12);
+assert.equal(await page.locator('#query').evaluate(el => el === document.activeElement), true);
+await page.getByRole('button', { name: '相关与对话', exact: true }).click();
+assert.equal(await page.locator('[data-entry]:visible').count(), 3);
+await page.locator('#query').fill('专家');
+assert.ok(await page.locator('[data-entry]:visible').count() > 0);
+const savedUrl = page.url();
+const savedCount = await page.locator('[data-entry]:visible').count();
+await page.reload();
+assert.equal(await page.locator('[data-entry]:visible').count(), savedCount);
+assert.equal(page.url(), savedUrl);
+const searchAxe = await new AxeBuilder({ page }).analyze();
+assert.deepEqual(searchAxe.violations.map(v => ({ id: v.id, impact: v.impact })), []);
+results.push('Search: input, combined category filtering, empty state, reset/focus and URL reload persistence pass; axe 0 violations.');
+
+const links = new Set(['','library/','learn/','method/'].map(route => mount + route));
+await page.goto(url('library/'));
+for (const href of await page.locator('a[href^="/"]').evaluateAll(nodes => nodes.map(el => el.getAttribute('href')))) links.add(href);
+assert.equal([...links].filter(href => href.startsWith(mount + 'entries/')).length, 12);
+for (const href of links) {
+  const response = await page.request.get(new URL(href, base).href);
+  assert.ok(href.startsWith(mount), `Link escaped deployment base: ${href}`);
+  assert.equal(response.status(), 200, href);
+  await page.goto(new URL(href, base).href);
+  for (const link of await page.locator('a[href^="/"]').evaluateAll(nodes => nodes.map(el => el.getAttribute('href')))) links.add(link);
+  const fragments = await page.locator('a[href^="#"]').evaluateAll(nodes => nodes.map(el => el.getAttribute('href').slice(1)));
+  for (const id of fragments) assert.ok(await page.locator(`[id="${id}"]`).count(), `${href}#${id}`);
+}
+results.push(`All ${links.size} discovered local routes return HTTP 200; all local section fragments exist; all 12 article routes included.`);
+await page.goto(url('learn/'));
+assert.equal(await page.locator('.learning-path li').count(), 12);
+await page.locator('.learning-path li a').first().click();
+for (let step = 0; step < 3; step++) await page.locator('.next-lesson > a').click();
+assert.equal(await page.locator('.next-lesson > a').getAttribute('href'), mount + 'learn/');
+results.push('Learning: 12 ordered entry links; first four-entry chain reaches return-to-learning action.');
+
+const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, deviceScaleFactor: 1, hasTouch: true });
+const mobile = await mobileContext.newPage();
+for (const route of [...links]) {
+  await mobile.goto(new URL(route, base).href);
+  assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, `overflow ${route}`);
+}
+await mobile.goto(url('entries/authority/'));
+await mobile.screenshot({ path: 'review/entry-mobile.png', fullPage: true });
+const mobileAxe = await new AxeBuilder({ page: mobile }).analyze();
+assert.deepEqual(mobileAxe.violations.map(v => ({ id: v.id, impact: v.impact, nodes: v.nodes.map(n=>n.target) })), []);
+results.push('390×844 mobile: home, library, learning, method and 12 entries have no horizontal overflow; article axe audit 0 violations.');
+await mobile.goto(url('library/'));
+await mobile.locator('#query').fill('因果');
+assert.ok(await mobile.locator('[data-entry]:visible').count() > 0);
+await mobile.screenshot({ path: 'review/search-mobile.png', fullPage: true });
+results.push('Mobile search input returns results.');
+
+const nojs = await browser.newPage({ javaScriptEnabled: false });
+await nojs.goto(url('library/'));
+assert.equal(await nojs.locator('[data-entry]:visible').count(), 12);
+assert.equal(await nojs.locator('#search-controls').isVisible(), false);
+assert.equal(await nojs.locator('noscript').isVisible(), true);
+await nojs.getByRole('link', { name: '条件与形式 ↗', exact: true }).click();
+assert.equal(await nojs.locator('.entry-card').count(), 2);
+await nojs.locator('.entry-card h3 a').first().click();
+assert.equal(await nojs.locator('#boundary').isVisible(), true);
+results.push('No JavaScript: all entries visible, inert search controls hidden, category and article navigation work.');
+assert.deepEqual(errors, []);
+results.push('Observed browser page errors / console errors: 0.');
+await browser.close();
+await writeFile('review/test-results.json', JSON.stringify({ checkedAt: new Date().toISOString(), base, results, errors }, null, 2));
+console.log(results.join('\n'));
